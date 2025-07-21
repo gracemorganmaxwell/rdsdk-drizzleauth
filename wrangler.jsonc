@@ -22,8 +22,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "drizzle",
-      "database_id": "e9ba1fc5-f36a-4a9f-a222-925de38426dc",
+      "database_name": "gracies-custard-db-prod",
+      "database_id": "7dde6ddd-3c7f-4062-8b36-f62671877bc4",
       "migrations_dir": "drizzle"
     }
   ],
@@ -35,6 +35,6 @@
 
   // Environment variables
   "vars": {
-    // Add your environment variables here
+    "WEBAUTHN_APP_NAME": "Gracies Custard OS" 
   }
 }

@@ -1,0 +1,182 @@
+# **RedwoodSDK with Drizzle ORM: A Production-Ready CMS Development Plan**
+
+## **Document 1: High-Level Plan & Architecture**
+
+This document provides a comprehensive architectural overview and a detailed, production-focused development plan for the Gracie's Custard OS CMS.
+
+### **Development Principles**
+
+- **Test-Driven Design (TDD):** Development will strictly follow TDD principles. For each piece of functionality, a corresponding test will be written _first_ using **Vitest** to define and verify requirements. The goal is to focus on testing functionality to ensure robust and reliable code.
+- **Strict TypeScript:** The codebase will adhere to strict TypeScript rules. The `any` type is forbidden. If the correct type is not immediately clear, the developer will ask for clarification rather than making an assumption. All shared types will be clearly defined to ensure type safety across the application.
+- **Domain-Driven Design & Singleton Principle:** The architecture will follow established Domain-Driven Design patterns. Before implementing new functionality, the developer will look for existing implementations to ensure consistency and adherence to the Single Responsibility Principle.
+
+### **Plan: Gracie's Custard OS - CMS Feature**
+
+- **Goal:** Build a complete, production-ready Content Management System (CMS) for "Gracie's Custard OS."
+- **User:** A single administrator who will manage `Posts`, `Projects`, `Tags`, and `Images`.
+- **Architecture:** RedwoodSDK with React Server Components, Server Functions, and **Drizzle ORM** connecting to a Cloudflare D1 database. Styling will be implemented with **Tailwind CSS**.
+
+### **Architectural Overview**
+
+- **Server Components (Default):** Run on the server (Cloudflare Worker) and are used for data fetching, directly awaiting Drizzle database calls (e.g., `db.select().from(posts)`).
+- **Client Components (`"use client"`):** Used for all user interactivity (state, forms, buttons). All CMS forms and interactive UI elements will be Client Components.
+- **Server Actions (`"use server"`):** Secure, server-run functions used for all backend data mutations (Create, Update, Delete). They can be called directly from Client Components, typically from a form's `action` attribute.
+- **`src/worker.tsx` (Router & Middleware):** The application's entry point, defining all routes and middleware. It will be used to protect the entire `/admin` route prefix with an authentication layer.
+- **Layouts (`layout()`):** Wraps pages in a consistent `AdminLayout.tsx` to provide a unified UI shell for the CMS.
+
+---
+
+## **Document 2: AITODO 1 - CMS Core Shell & Authentication**
+
+### **1.1 Shared Types**
+
+- [ ] **Create `src/app/types.ts`:** Define shared types to ensure type safety.
+
+  ```typescript
+  // src/app/types.ts
+  import type { users } from "@/db/schema";
+
+  /** The authenticated user object, derived from the database schema. */
+  export type AuthenticatedUser = Pick<
+    typeof users.$inferSelect,
+    "id" | "name" | "username"
+  >;
+
+  /** The application context, passed to Server Components from middleware. */
+  export interface AppContext {
+    user: AuthenticatedUser | undefined;
+  }
+  ```
+
+### **1.2 Admin Layout & Core Components**
+
+- [ ] **Create `AdminLayout.tsx`:** `src/app/layouts/AdminLayout.tsx`.
+- [ ] **TEST:** Verify `AdminLayout.tsx` renders its `children`, `AdminSidebar`, and `AdminHeader`.
+- [ ] **Create `AdminSidebar.tsx`:** `src/app/components/AdminSidebar.tsx`.
+- [ ] **TEST:** Verify `AdminSidebar.tsx` renders all navigation links correctly.
+- [ ] **Create `AdminHeader.tsx`:** `src/app/components/AdminHeader.tsx`.
+- [ ] **TEST:** Verify `AdminHeader.tsx` renders the title and logout link.
+- [ ] **Create `AdminDashboardPage.tsx`:** `src/app/pages/admin/AdminDashboardPage.tsx`.
+- [ ] **TEST:** Verify `AdminDashboardPage.tsx` renders a personalized welcome message.
+
+### **1.3 Routing & Authentication**
+
+- [ ] **Define Admin Routes:** Create `src/app/pages/admin/routes.ts` to group all admin-related routes.
+- [ ] **Integrate Routes & Auth Middleware in `src/worker.tsx`:** Protect the `/admin` prefix with an authentication interrupter that redirects unauthenticated users to `/user/login`.
+- [ ] **TEST: Auth Middleware:** Mock requests to `/admin` to verify that unauthenticated users are redirected and authenticated users are granted access.
+
+---
+
+## **Document 3: AITODO 2 - Full CRUD Implementation**
+
+This phase will be repeated for `Posts`, `Projects`, `Tags`, and `Images`, establishing a consistent and reusable pattern for all data management.
+
+### **2.1 `Posts` CRUD**
+
+- [ ] **Validation Schemas (`/lib/validation/postSchema.ts`):**
+
+  - `postSchema`: For creating new posts.
+  - `updatePostSchema`: Extends `postSchema` to include the post `id`.
+
+  ```typescript
+  // src/lib/validation/postSchema.ts
+  import { z } from "zod";
+
+  export const postSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    content: z.string().min(10, "Content must be at least 10 characters"),
+    // The slug will now be generated on the server.
+    slug: z.string().optional(),
+    excerpt: z.string().optional(),
+    bannerImage: z
+      .string()
+      .url("Must be a valid URL")
+      .optional()
+      .or(z.literal("")),
+    published: z.boolean().default(false),
+  });
+
+  export const updatePostSchema = postSchema.extend({
+    id: z.string().uuid("A valid post ID is required for an update."),
+  });
+
+  export type PostFormInput = z.infer<typeof postSchema>;
+  ```
+
+- [ ] **TEST:** Write unit tests to verify both schemas correctly validate and reject data.
+
+- [ ] **Server Actions (`/pages/admin/posts/serverFunctions.ts`):**
+
+  - Implement `createPost` and `updatePost` server actions.
+  - **Critical:** These functions will **return** a structured JSON object (`{ success: boolean, errors?: ... }`) instead of throwing errors on validation failure.
+  - On success, they will call `redirect()`.
+  - The `createPost` function will be responsible for generating the `slug` from the title.
+
+- [ ] **TEST:** Mock `db`, `requestInfo`, and `redirect`. Test all cases: success, unauthorized, validation failure, and database errors. Verify the correct JSON response or redirect is triggered.
+
+- [ ] **Reusable Form (`/components/forms/PostForm.tsx`):**
+
+  - Use React's `useFormState` hook to manage form state, handle validation errors returned from the server action, and display loading/success feedback.
+
+  ```tsx
+  // src/app/components/forms/PostForm.tsx
+  "use client";
+  import { useFormState } from "react-dom";
+  import type { PostFormInput } from "@/lib/validation/postSchema";
+
+  type ServerAction = (
+    prevState: any,
+    formData: FormData
+  ) => Promise<{ success: boolean; errors?: any }>;
+  type PostFormProps = { action: ServerAction; initialData?: PostFormInput };
+
+  export function PostForm({ action, initialData }: PostFormProps) {
+    const [state, formAction] = useFormState(action, { success: false });
+
+    return (
+      <form action={formAction} className="space-y-6">
+        {/* ... form fields for title, content, etc. ... */}
+        {state.errors?.title && (
+          <p className="text-red-500">{state.errors.title[0]}</p>
+        )}
+        {/* ... other error message displays ... */}
+        <button type="submit">Save Post</button>
+        {state.success && (
+          <p className="text-green-500">Post saved successfully!</p>
+        )}
+      </form>
+    );
+  }
+  ```
+
+- [ ] **TEST:** Verify `PostForm.tsx` renders correctly, displays validation errors from a mocked server response, and shows a success message.
+
+- [ ] **Pages (`/pages/admin/posts/`):**
+
+  - `PostsPage.tsx`: Fetches and displays a list of all posts.
+  - `NewPostPage.tsx`: Renders the `PostForm` for creating a new post.
+  - `EditPostPage.tsx`: Fetches a single post and renders the `PostForm` pre-filled with `initialData`.
+
+- [ ] **TEST:** Mock `db` calls to verify pages render correctly with fetched data.
+
+- [ ] **Delete Functionality:**
+
+  - Create a `deletePost` server action.
+  - In the posts list, add a "Delete" button within a mini-form that calls the action.
+
+- [ ] **TEST:** Add tests for the `deletePost` server action.
+
+### **2.2 `Projects`, `Tags`, & `Images` CRUD**
+
+- [ ] **Repeat the CRUD Pattern:** Apply the exact same TDD and implementation pattern established for `Posts` to `Projects`, `Tags`, and `Images`. For each model, create:
+  1.  **Validation Schemas:** `projectSchema`, `tagSchema`, etc.
+  2.  **TESTS** for the schemas.
+  3.  **Server Actions:** `createProject`, `updateTag`, etc.
+  4.  **TESTS** for the server actions.
+  5.  **Reusable Forms:** `ProjectForm`, `TagForm`, etc., using `useFormState`.
+  6.  **TESTS** for the forms.
+  7.  **Pages:** List, New, and Edit pages for each model.
+  8.  **TESTS** for the pages.
+  9.  **Delete Functionality** and associated tests.
+
+This systematic approach ensures consistency, predictability, and high quality across the entire CMS.

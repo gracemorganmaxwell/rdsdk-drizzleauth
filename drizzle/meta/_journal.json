@@ -8,6 +8,13 @@
       "when": 1743024718213,
       "tag": "0000_lame_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1752981822302,
+      "tag": "0001_tranquil_sunfire",
+      "breakpoints": true
     }
   ]
 }
