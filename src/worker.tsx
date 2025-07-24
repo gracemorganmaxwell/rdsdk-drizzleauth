@@ -36,21 +36,21 @@ const isAuthenticated = ({ ctx }: { ctx: any }) => {
 
 export default defineApp([
   setCommonHeaders(),
-  async ({ ctx }: { ctx: any }) => {
-    ctx.db = db;
-    if (process.env.NODE_ENV === "development") {
-      try {
-        ctx.user = await ctx.db.query.users.findFirst();
-      } catch (error) {
-        console.error("Dev user mock failed:", error);
-        ctx.user = undefined;
-      }
-    }
-  },
   render(Document, [
     index(Home),
     prefix("/admin", [
       isAuthenticated as any, // AIDEV-NOTE: Using 'as any' to bypass faulty rwsdk@0.0.80 types.
+      async ({ ctx }: { ctx: any }) => {
+        ctx.db = db;
+        if (process.env.NODE_ENV === "development") {
+          try {
+            ctx.user = await ctx.db.query.users.findFirst();
+          } catch (error) {
+            console.error("Dev user mock failed:", error);
+            ctx.user = undefined;
+          }
+        }
+      },
       route("/", (requestInfo) => <AdminDashboardPage ctx={requestInfo.ctx} />),
       route("/posts", () => <PostsPage />),
       route("/posts/new", () => <NewPostPage />),
