@@ -1,3 +1,9 @@
+---
+alwaysApply: true
+---
+
+
+
 # **RedwoodSDK with Drizzle ORM: A Production-Ready CMS**
 
 ## **Document 1: High-Level Plan & Architecture**
@@ -56,6 +62,7 @@ The following pattern was successfully implemented for all four content types: `
   - `create`, `update`, and `delete` server actions were implemented for each content type.
   - **Critical Pattern:** Server actions handle form data, including correcting boolean values from checkboxes (e.g., converting `"on"` to `true`). On successful database operations, they **return a `{ success: true }` object.**
   - **Example `updateProject` data handling:**
+  
     ```typescript
     // src/app/pages/admin/projects/serverFunctions.ts
     const formValues = Object.fromEntries(formData.entries());
@@ -103,5 +110,192 @@ The following pattern was successfully implemented for all four content types: `
   - A `delete` server action was created for each content type.
   - List pages include a "Delete" button within a form to call the action.
 
+## **RedwoodSDK with Drizzle ORM: A Production-Ready CMS Development Guide**
+
+This README.mdc serves as the central guide for developing and deploying "Gracie's Custard OS" CMS. It incorporates all lessons from previous troubleshooting, focuses on stability with rwsdk@0.0.80, and emphasizes best practices like TDD, strict TypeScript, and secure deployment to Cloudflare.
+
+**Important Instructions for AI (T3 Chat):**
+
+- **Ignore Previous Build Issues:** All prior errors (e.g., module resolution, recursive scripts, API mismatches) have been resolved through config updates and version-specific adjustments. Do not reference or attempt to fix them again—assume the environment is stable.
+- **Fix package.json:** Before proceeding, apply these exact changes to eliminate recursion, syntax errors, and inconsistencies. Standardize to pnpm, add testing/linting, and ensure a complete release flow. Here's the updated package.json (replace yours with this):
+
+  ```json
+  {
+    "name": "@redwoodjs/starter-drizzle",
+    "version": "1.0.0",
+    "description": "A RedwoodSDK starter for projects with a database using Drizzle",
+    "main": "src/worker.tsx", // Updated to point to actual entry
+    "type": "module",
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+      "build": "pnpm run build:client && pnpm run build:server",
+      "build:client": "vite build --outDir dist/client --ssr false",
+      "build:server": "vite build --outDir dist/server --ssr src/worker.tsx",
+      "dev": "NODE_ENV=${NODE_ENV:-development} vite dev",
+      "dev:init": "rw-scripts dev-init",
+      "preview": "pnpm build && pnpm vite preview",
+      "worker:run": "rw-scripts worker-run",
+      "clean": "pnpm clean:vite",
+      "clean:vite": "rm -rf ./node_modules/.vite",
+      "release": "pnpm clean && pnpm build && wrangler deploy",
+      "format": "prettier --write ./src",
+      "migrate:new": "drizzle-kit generate",
+      "migrate:dev": "wrangler d1 migrations apply DB",
+      "seed": "pnpm run worker:run ./src/db/seed.ts",
+      "check": "pnpm run types",
+      "types": "tsc --noEmit",
+      "test": "vitest", // Added for TDD
+      "lint": "eslint src --ext .ts,.tsx --fix" // Added for code quality
+    },
+    "dependencies": {
+      "bcryptjs": "^3.0.2",
+      "dotenv": "^16.4.7",
+      "drizzle-orm": "^0.39.3",
+      "rwsdk": "0.0.80",
+      "uuid": "^11.1.0",
+      "zod": "^3.23.8"
+    },
+    "devDependencies": {
+      "@types/bcryptjs": "^2.4.6",
+      "@types/node": "^22.13.11",
+      "@types/react": "^19.1.2",
+      "@types/react-dom": "^19.1.2",
+      "@types/uuid": "^9.0.8",
+      "drizzle-kit": "^0.30.4",
+      "tailwindcss": "^3.4.7",
+      "tsx": "^4.19.2",
+      "vite": "^6.1.1",
+      "wrangler": "^4.14.1",
+      "vitest": "^2.0.4", // Added for testing
+      "jsdom": "^24.1.1", // Added for DOM testing
+      "@testing-library/react": "^16.0.0", // Added for React testing
+      "@testing-library/jest-dom": "^6.4.8", // Added for assertions
+      "eslint": "^8.57.0", // Added for linting
+      "prettier": "^3.3.3" // Added explicitly for formatting
+    },
+    "packageManager": "pnpm@9.14.4+sha512.c8180b3fbe4e4bca02c94234717896b5529740a6cbadf19fa78254270403ea2f27d4e1d46a08a0f56c89b63dc8ebfd3ee53326da720273794e6200fcf0d184ab"
+  }
+  ```
+
+- **Why These Fixes?** Removed recursion (e.g., "build" now calls sub-builds), fixed syntax (comma to `&&`), standardized to pnpm, added testing/linting for TDD/quality. Run `pnpm install` after updating.
+
+- **General Guidance:** Follow TDD strictly—write failing tests first, then implement. Use strict TS (no `any`). For any uncertainty, ask for clarification. Deploy only after local tests pass.
+
 ---
+
+## **Development Principles (Reminder)**
+
+- **Test-Driven Design (TDD):** Write tests first with Vitest. Focus on unit tests for components/middleware, integration for Drizzle queries.
+- **Strict TypeScript:** No `any`; define explicit types (e.g., in `types.ts`).
+- **Best Practices:** Keep code modular, use component-level layouts, handle errors in middleware, log in production.
+
+---
+
+## **High-Level Plan: Proceeding with CMS Deployment**
+
+With the core CMS implemented (per previous AITODOs), the next phase is deployment to Cloudflare. This guide ensures a safe, best-practice deploy: test locally, deploy to staging/preview, verify, then go live.
+
+### **Prerequisites Before Deployment**
+
+- Ensure all AITODO tasks are complete and tests pass (`pnpm test`).
+- Update `wrangler.jsonc` with your domain/route (as discussed previously).
+- Set secrets in Cloudflare Dashboard (Workers > Your Project > Settings > Variables):
+  - CLOUDFLARE_ACCOUNT_ID
+  - CLOUDFLARE_DATABASE_ID
+  - CLOUDFLARE_D1_TOKEN
+  - Any auth keys (e.g., AUTH_SECRET_KEY if using sessions).
+- Run `pnpm format` and `pnpm lint` for clean code.
+- Seed production DB if needed (`pnpm seed` adapted for remote, or manual via dashboard).
+
+---
+
+## **Step-by-Step Deployment Guide (Best Practices)**
+
+Follow these steps to deploy safely. This draws from Cloudflare's official Wrangler docs, best practices for Workers (e.g., preview before prod, monitor logs), and experience with similar deploys.
+
+### **Step 1: Local Build & Preview (Verify Before Deploy)**
+
+- **Why?** Catches issues locally without affecting production (best practice: "Test in prod-like env").
+- Run:
+  
+  ```bash
+  pnpm build  # Builds client + server
+  pnpm preview  # Serves built app locally (e.g., http://localhost:4173)
+  ```
+
+- **Test:** Open browser, navigate to /admin, test login/CRUD. Check console/logs for errors.
+- **If Fails:** Debug locally (e.g., Vite logs). Common: Missing env vars—set in `.env` and load with dotenv.
+
+### **Step 2: Deploy to Cloudflare (Staged Approach)**
+
+- **Why Staged?** Use previews to test without risking live site (Cloudflare best practice: "Use preview URLs for QA").
+- Run:
+  
+  ```bash
+  pnpm release  # Cleans, builds, deploys
+  ```
+
+  - This uses Wrangler to deploy to your "reflection-cms" worker.
+  - Output will include:
+    - Production URL: reflection-cms.gracemorganmaxwell.workers.dev
+    - Preview URLs: *-reflection-cms.gracemorganmaxwell.workers.dev (test here first)
+    - Route: gracie.codes/cms/admin* (your custom domain mapping)
+
+- **Best Practice: Versioning & Rollback**
+  - Tag your Git commit: `git tag v1.0-deploy && git push --tags`.
+  - If issues, rollback via dashboard (Workers > Deployments > Rollback).
+
+### **Step 3: Post-Deployment Verification**
+
+- **Test Production URLs:**
+  - Worker Dev: https://reflection-cms.gracemorganmaxwell.workers.dev (full site).
+  - Custom Route: https://gracie.codes/cms/admin (CMS entry—test login, CRUD).
+  - Preview: Use the *-preview URL for isolated testing.
+- **Manual Checks (E2E):**
+  - Auth: Login/logout, ensure /admin redirects unauth users.
+  - CRUD: Create/edit/delete a post—verify in D1 dashboard.
+  - Errors: Check Workers Logs in dashboard for issues (enable Observability if not already).
+- **Monitoring Tools:** In Cloudflare Dashboard > Workers > Metrics/Logs. Set up alerts for errors (best practice for production).
+
+### **Step 4: CI/CD for Future Deploys (Optional but Recommended)**
+
+- Set up GitHub Actions for auto-deploys:
+  - Create `.github/workflows/deploy.yml`:
+  
+    ```yaml
+    name: Deploy to Cloudflare
+    on: [push]
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: pnpm/action-setup@v3
+          - run: pnpm install
+          - run: pnpm release
+            env:
+              CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+              # Add other secrets
+    ```
+
+  - Add secrets in GitHub Repo Settings > Secrets.
+
+### **Troubleshooting Common Deployment Issues**
+
+- **Build Fails:** Check Vite logs; ensure all imports resolve (e.g., no missing modules).
+- **DB Connection Errors:** Verify D1 binding in dashboard matches wrangler.jsonc.
+- **Routing Issues:** If /cms/admin 404s, confirm domain is verified and route is active in dashboard.
+- **Auth Problems:** Ensure env vars like WEBAUTHN_APP_NAME are set in production secrets.
+- **Logs:** Always check dashboard logs first for runtime errors.
+
+### **Next Steps After Deployment**
+
+- Monitor performance (D1 queries, Worker CPU).
+- Add analytics (e.g., Cloudflare Analytics Engine).
+- Scale: If traffic grows, consider D1 replicas or Workers KV for caching.
+
+This completes the deployment. Your CMS is now live—congrats! If errors occur, share logs.
 

@@ -24,7 +24,15 @@
       "binding": "DB",
       "database_name": "reflection-db-prod",
       "database_id": "7dde6ddd-3c7f-4062-8b36-f62671877bc4",
-      "migrations_dir": "drizzle/meta"
+      "migrations_dir": "drizzle"
+    }
+  ],
+
+  // Custom routes (maps your CMS to /cms/admin on gracie.codes)
+  "routes": [
+    {
+      "pattern": "gracie.codes/cms/admin*",
+      "zone_name": "gracie.codes"
     }
   ],
 
@@ -35,6 +43,6 @@
 
   // Environment variables
   "vars": {
-    "WEBAUTHN_APP_NAME": "Gracies Custard OS" 
+    "WEBAUTHN_APP_NAME": "Reflection CMS" 
   }
 }

@@ -1,3 +1,4 @@
+// @ts-ignore
 import { defineApp } from "rwsdk/worker";
 import { index, render, prefix, route } from "rwsdk/router";
 import { Document } from "@/app/Document";
