@@ -28,14 +28,6 @@
     }
   ],
 
-  // Custom routes (maps your CMS to /cms/admin on gracie.codes)
-  "routes": [
-    {
-      "pattern": "gracie.codes/cms/admin*",
-      "zone_name": "gracie.codes"
-    }
-  ],
-
   // Observability settings
   "observability": {
     "enabled": true
@@ -43,6 +35,6 @@
 
   // Environment variables
   "vars": {
-    "WEBAUTHN_APP_NAME": "Reflection CMS" 
+    "WEBAUTHN_APP_NAME": "Gracies Custard OS" 
   }
 }

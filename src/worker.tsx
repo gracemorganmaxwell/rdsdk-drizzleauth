@@ -36,6 +36,7 @@ const isAuthenticated = ({ ctx }: { ctx: any }) => {
 
 export default defineApp([
   setCommonHeaders(),
+  // Database and user loading with error handling
   render(Document, [
     index(Home),
     prefix("/admin", [
@@ -73,3 +74,15 @@ export default defineApp([
     ]),
   ]),
 ]);
+
+/* 
+ * TEST WORKER COMMENTED OUT:
+ * The minimal test Worker is commented below. 
+ * It was used to verify deployment—uncomment if needed for further testing.
+ * For normal operation, keep it commented and use the full code above.
+ */
+// export default defineApp([
+//   render(Document, [
+//     route("/", () => new Response("Test Successful! Your Worker is live and responding.")),
+//   ]),
+// ]);
