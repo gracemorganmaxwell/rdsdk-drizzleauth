@@ -5,8 +5,7 @@ import { Document } from "@/app/Document";
 import { Home } from "@/app/pages/Home";
 import { setCommonHeaders } from "@/app/headers";
 import { db } from "@/db";
-import * as schema from "@/db/schema";
-import { eq } from "drizzle-orm";
+
 import AdminDashboardPage from "@/app/pages/admin/AdminDashboardPage";
 import NewPostPage from "@/app/pages/admin/posts/NewPostPage";
 import PostsPage from "@/app/pages/admin/posts/PostsPage";
